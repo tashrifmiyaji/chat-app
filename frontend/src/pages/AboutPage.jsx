@@ -19,7 +19,7 @@ const AboutPage = () => {
 
             try {
                 const result = await deleteUserAccountApi();
-                console.log(result.message); 
+                // console.log(result.message); 
                 toast.success("Account deleted successfully!", { id: toastId }); 
                 logout();
             } catch (error) {

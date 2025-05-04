@@ -43,7 +43,7 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
             !msg.read && msg.sender?._id === selectedConversation._id
         );
         if (unreadMessages.length > 0) {
-            console.log(`ChatArea: Emitting markAsRead for ${unreadMessages.length} messages.`);
+            // console.log(`ChatArea: Emitting markAsRead for ${unreadMessages.length} messages.`);
             unreadMessages.forEach(msg => {
                 socket.emit('markAsRead', {
                     messageId: msg._id,
@@ -70,7 +70,7 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
 
             if (!selectedConversation?._id) return;
             if (isFetching.current) {
-                console.log("ChatArea: Already fetching messages, skipping.");
+                // console.log("ChatArea: Already fetching messages, skipping.");
                 return;
             }
             isFetching.current = true;
@@ -96,33 +96,33 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
     // ---- useEffect: Socket Event Listeners Setup & Cleanup ----
     useEffect(() => {
         if (!socket || !loggedInUser?._id) {
-            console.log(`ChatArea Listeners EFFECT: Waiting for socket (${!!socket}) and loggedInUser (${!!loggedInUser?._id}).`);
+            // console.log(`ChatArea Listeners EFFECT: Waiting for socket (${!!socket}) and loggedInUser (${!!loggedInUser?._id}).`);
             return;
         }
-        console.log(`%cChatArea Listeners EFFECT: RUNNING/RE-RUNNING. Socket: ${socket.id}, Selected Convo ID: ${selectedConversation?._id}`, 'color: green; font-weight: bold');
+        // console.log(`%cChatArea Listeners EFFECT: RUNNING/RE-RUNNING. Socket: ${socket.id}, Selected Convo ID: ${selectedConversation?._id}`, 'color: green; font-weight: bold');
 
         // --- Define Handler for 'receiveMessage' ---
         const messageListener = (receivedMessage) => {
              if (!receivedMessage?._id || !receivedMessage?.sender?._id || !receivedMessage?.receiver || typeof receivedMessage.receiver !== 'string') {
                  console.warn("Socket <<< receiveMessage: Incomplete msg:", receivedMessage); return;
              }
-            console.log(`%cSocket <<< receiveMessage: Received msg ${receivedMessage._id} from ${receivedMessage.sender.name}`, 'color: lightblue; font-weight: bold;', receivedMessage);
+            // console.log(`%cSocket <<< receiveMessage: Received msg ${receivedMessage._id} from ${receivedMessage.sender.name}`, 'color: lightblue; font-weight: bold;', receivedMessage);
 
             const isFromOtherUserInCurrentChat = selectedConversation && receivedMessage.sender._id === selectedConversation._id && receivedMessage.receiver === loggedInUser._id;
 
             if (isFromOtherUserInCurrentChat) {
-                console.log("   Action: ADDING message from other user to state.");
+                // console.log("   Action: ADDING message from other user to state.");
                 setMessages(prev => {
                     if (prev.some(msg => msg._id === receivedMessage._id)) {
-                        console.log(`   Action: Message ${receivedMessage._id} already exists. Skipping add.`); return prev;
+                        // console.log(`   Action: Message ${receivedMessage._id} already exists. Skipping add.`); return prev;
                     }
-                    console.log("   Action: Appending new message to list.");
+                    // console.log("   Action: Appending new message to list.");
                     return [...prev, receivedMessage];
                 });
                 markMessagesAsRead([receivedMessage]);
                 scrollToBottom();
             } else {
-                console.log("   Action: Message is for a different conversation. Ignored for direct display.");
+                // console.log("   Action: Message is for a different conversation. Ignored for direct display.");
                 // Note: The unread count logic is now in ChatPage.jsx
             }
         };
@@ -133,14 +133,14 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
 
         // --- messageRead listener ---
         const messageReadListener = ({ messageId, receiverId }) => {
-             console.log(`%cSocket <<< messageRead: Received event for MsgID: ${messageId}, Read by: ${receiverId}`, 'color: yellow; font-weight: bold;');
-             console.log(`   Current Selected Convo Partner ID: ${selectedConversation?._id}`);
-             console.log(`   Logged In User ID: ${loggedInUser?._id}`);
+            //  console.log(`%cSocket <<< messageRead: Received event for MsgID: ${messageId}, Read by: ${receiverId}`, 'color: yellow; font-weight: bold;');
+            //  console.log(`   Current Selected Convo Partner ID: ${selectedConversation?._id}`);
+            //  console.log(`   Logged In User ID: ${loggedInUser?._id}`);
             if (selectedConversation && receiverId === selectedConversation._id) {
-                console.log("   Condition MET: Event is for the currently open chat.");
+                // console.log("   Condition MET: Event is for the currently open chat.");
                  setMessages(prevMessages => {
                      const messageExists = prevMessages.some(msg => msg._id === messageId && msg.sender?._id === loggedInUser._id);
-                     console.log(`   Checking state: Message ${messageId} exists and sent by me? ${messageExists}`);
+                    //  console.log(`   Checking state: Message ${messageId} exists and sent by me? ${messageExists}`);
                      if (!messageExists) {
                          console.warn(`   State Update SKIPPED: Message ${messageId} not found in current state or not sent by me.`);
                          return prevMessages;
@@ -161,17 +161,17 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
         // --- messageSent listener (Confirmation for sender) ---
         const messageSentListener = (savedMessage) => {
              if (!savedMessage?._id) return;
-             console.log('>>> Socket Event Received: messageSent (Confirming msg)', savedMessage);
+            //  console.log('>>> Socket Event Received: messageSent (Confirming msg)', savedMessage);
              setMessages(prev => prev.map(msg => (msg.isOptimistic && msg.content === savedMessage.content && msg.sender._id === savedMessage.sender._id) ? savedMessage : msg));
         };
 
          // --- messageDeleted listener ---
         const messageDeletedListener = ({ messageId, deletedBy }) => {
-             console.log(`%cSocket <<< messageDeleted: Received event for MsgID: ${messageId}, Deleted by: ${deletedBy}`, 'color: red; font-weight: bold;');
+            //  console.log(`%cSocket <<< messageDeleted: Received event for MsgID: ${messageId}, Deleted by: ${deletedBy}`, 'color: red; font-weight: bold;');
              setMessages(prevMessages => {
                  const messageExists = prevMessages.some(msg => msg._id === messageId);
                  if(messageExists){
-                     console.log(`   State Update APPLIED: Removing message ${messageId} from UI.`);
+                    //  console.log(`   State Update APPLIED: Removing message ${messageId} from UI.`);
                      return prevMessages.filter(msg => msg._id !== messageId);
                  } else {
                      console.warn(`   State Update SKIPPED: Message ${messageId} not found in current state for deletion.`);
@@ -193,7 +193,7 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
 
 
         // === Attach Listeners ===
-        console.log("ChatArea Listeners EFFECT: Attaching all listeners...");
+        // console.log("ChatArea Listeners EFFECT: Attaching all listeners...");
         socket.on('receiveMessage', messageListener);
         socket.on('typing', typingListener);
         socket.on('stop typing', stopTypingListener);
@@ -204,7 +204,7 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
 
         // === Cleanup Function ===
         return () => {
-            console.log(`%cChatArea Listeners EFFECT: CLEANING UP for socket ${socket.id}, prev convo ID: ${selectedConversation?._id}`, 'color: orange');
+            // console.log(`%cChatArea Listeners EFFECT: CLEANING UP for socket ${socket.id}, prev convo ID: ${selectedConversation?._id}`, 'color: orange');
             socket.off('receiveMessage', messageListener);
             socket.off('typing', typingListener);
             socket.off('stop typing', stopTypingListener);
@@ -260,7 +260,7 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
 
         // Optionally keep window.confirm
         if (window.confirm("Delete this message? This cannot be undone.")) {
-             console.log(`Emitting 'deleteThisMessage' for MsgID: ${messageId}`);
+            //  console.log(`Emitting 'deleteThisMessage' for MsgID: ${messageId}`);
              setDeletingMessageId(messageId); // Set loading state for UI feedback
              socket.emit('deleteThisMessage', { messageId });
              // Success/Error handling is now done by the socket listeners ('messageDeleted', 'deleteMessageError')

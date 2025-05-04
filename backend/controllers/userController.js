@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 // @route   GET /api/users?search=query
 // @access  Protected
 const searchUsers = async (req, res, next) => {
-    console.log('--- searchUsers Controller Triggered ---'); // Log when function starts
+    // console.log('--- searchUsers Controller Triggered ---'); // Log when function starts
 
     // 1. Get Logged In User ID from middleware
     const loggedInUserId = req.user?._id; // Using optional chaining just in case
@@ -17,18 +17,18 @@ const searchUsers = async (req, res, next) => {
         console.error('CRITICAL: req.user._id is missing after protect middleware!');
         return res.status(401).json({ message: 'Authentication error: User ID not found.' });
     }
-    console.log(`Logged-in User ID: ${loggedInUserId}`);
+    // console.log(`Logged-in User ID: ${loggedInUserId}`);
 
     // 2. Get Search Term from query
     const searchTerm = req.query.search;
 
     // 3. Handle Empty Search Term
     if (!searchTerm || searchTerm.trim() === '') {
-        console.log('Search term is empty. Returning [].');
+        // console.log('Search term is empty. Returning [].');
         return res.json([]); // Return empty array if search term is missing or empty
     }
     const trimmedSearchTerm = searchTerm.trim(); // Use trimmed term for query
-    console.log(`Searching for term: "${trimmedSearchTerm}"`);
+    // console.log(`Searching for term: "${trimmedSearchTerm}"`);
 
     try {
         // 4. Construct the MongoDB Query
@@ -42,21 +42,21 @@ const searchUsers = async (req, res, next) => {
             _id: { $ne: loggedInUserId }
         };
 
-        console.log('Executing MongoDB find with query:', JSON.stringify(queryConditions));
+        // console.log('Executing MongoDB find with query:', JSON.stringify(queryConditions));
 
         // 5. Execute the Query
         const users = await User.find(queryConditions)
             .select('name userId _id') // Select specific fields
             .limit(15); // Limit results to avoid overload (adjust as needed)
 
-        console.log(`Query executed. Found ${users.length} users.`);
+        // console.log(`Query executed. Found ${users.length} users.`);
 
         // 6. Send the results
         res.status(200).json(users);
 
     } catch (error) {
         // 7. Handle Errors
-        console.error('Error during user search:', error);
+        // console.error('Error during user search:', error);
         res.status(500).json({ message: 'Server error during user search' });
     }
 };
@@ -66,7 +66,7 @@ const searchUsers = async (req, res, next) => {
 // @route   DELETE /api/users/me
 // @access  Protected (Requires Authentication)
 const deleteUserAccount = async (req, res, next) => {
-    console.log('--- deleteUserAccount Controller Triggered ---'); // Log entry
+    // console.log('--- deleteUserAccount Controller Triggered ---'); // Log entry
     const loggedInUserId = req.user?._id; // Get ID from protect middleware
 
     // Defensive check
@@ -74,7 +74,7 @@ const deleteUserAccount = async (req, res, next) => {
         console.error('CRITICAL: req.user._id is missing after protect middleware!');
         return res.status(401).json({ message: 'Authentication error: User ID not found.' });
     }
-    console.log(`Attempting to delete account for User ID: ${loggedInUserId}`);
+    // console.log(`Attempting to delete account for User ID: ${loggedInUserId}`);
 
     // No need to validate ObjectId format here if protect middleware does its job
 
@@ -83,7 +83,7 @@ const deleteUserAccount = async (req, res, next) => {
         const user = await User.findById(loggedInUserId);
 
         if (!user) {
-            console.log(`User with ID ${loggedInUserId} not found for deletion.`);
+            // console.log(`User with ID ${loggedInUserId} not found for deletion.`);
             // Even if user not found, perhaps proceed to delete messages just in case?
             // Or return 404. Let's return 404.
             return res.status(404).json({ message: 'User not found' });
@@ -95,7 +95,7 @@ const deleteUserAccount = async (req, res, next) => {
 
         // Delete the user document
         const deleteResult = await User.deleteOne({ _id: loggedInUserId });
-        console.log('User deletion result:', deleteResult);
+        // console.log('User deletion result:', deleteResult);
 
         if (deleteResult.deletedCount === 0) {
              console.warn(`User ${loggedInUserId} found but delete operation removed 0 documents.`);

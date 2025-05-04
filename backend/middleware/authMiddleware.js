@@ -9,19 +9,19 @@ dotenv.config();
 const protect = async (req, res, next) => {
     let token;
     const { method, originalUrl } = req; // Get method and URL for logging
-    console.log(`\n--- Protect Middleware triggered for: ${method} ${originalUrl} ---`);
+    // console.log(`\n--- Protect Middleware triggered for: ${method} ${originalUrl} ---`);
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
             if (!token) throw new Error("Token extraction failed."); // Early exit if split fails
-            console.log("[Protect] Token Extracted successfully.");
+            // console.log("[Protect] Token Extracted successfully.");
 
             // Verify token & Decode Payload
             let decoded;
             try {
                  decoded = jwt.verify(token, process.env.JWT_SECRET);
-                 console.log("[Protect] Token Verified. Decoded Payload:", decoded);
+                //  console.log("[Protect] Token Verified. Decoded Payload:", decoded);
             } catch (jwtError) {
                 // Specific logging for JWT errors
                  console.error("[Protect] JWT Verification Error:", jwtError.name, jwtError.message);
@@ -37,7 +37,7 @@ const protect = async (req, res, next) => {
                  return res.status(401).json({ message: 'Token payload structure is invalid.' });
             }
             const userIdFromToken = decoded.userId;
-            console.log(`[Protect] userId extracted from payload: "${userIdFromToken}" (Type: ${typeof userIdFromToken})`);
+            // console.log(`[Protect] userId extracted from payload: "${userIdFromToken}" (Type: ${typeof userIdFromToken})`);
 
             // === CRITICAL FORMAT VALIDATION ===
             // Validate if the extracted ID is a valid MongoDB ObjectId format BEFORE DB query
@@ -46,11 +46,11 @@ const protect = async (req, res, next) => {
                  // SEND 401 because the token itself contains bad data for authentication
                  return res.status(401).json({ message: 'User identifier in token is invalid.' });
             }
-             console.log("[Protect] Extracted userId format is a valid ObjectId.");
+            //  console.log("[Protect] Extracted userId format is a valid ObjectId.");
 
 
             // === DATABASE LOOKUP ===
-            console.log(`[Protect] Attempting User.findById with ID: ${userIdFromToken}`);
+            // console.log(`[Protect] Attempting User.findById with ID: ${userIdFromToken}`);
             let foundUser;
             try {
                 foundUser = await User.findById(userIdFromToken).select('-password').lean(); // Use lean() for plain object
@@ -72,11 +72,11 @@ const protect = async (req, res, next) => {
                   console.error("[Protect] Error: User found, but _id property is missing from the result object!", foundUser);
                   return res.status(500).json({ message: 'Server error processing user data.' });
              }
-             console.log(`[Protect] User found: ID=${foundUser._id}, Username=${foundUser.username}. Attaching to req.user.`);
+            //  console.log(`[Protect] User found: ID=${foundUser._id}, Username=${foundUser.username}. Attaching to req.user.`);
             req.user = foundUser; // Attach the plain user object (or full Mongoose doc if not using lean())
 
             // Proceed to the next step (controller)
-             console.log("[Protect] Authentication successful. Calling next().");
+            //  console.log("[Protect] Authentication successful. Calling next().");
             next();
 
         } catch (error) {

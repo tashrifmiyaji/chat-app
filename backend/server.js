@@ -89,10 +89,10 @@ io.on("connection", (socket) => {
 		onlineUsers[currentUserId] = socket.id; // Store mapping: userId -> socketId
 
 		socket.join(currentUserId); // Join a room identified by the user's own ID
-		console.log(
-			`[Socket Setup] User ${currentUserId} connected with socket ${socket.id}. Joined room.`
-		);
-		console.log("[Online Users Map]", onlineUsers);
+		// console.log(
+		// 	`[Socket Setup] User ${currentUserId} connected with socket ${socket.id}. Joined room.`
+		// );
+		// console.log("[Online Users Map]", onlineUsers);
 
 		// Emit the updated list of online user IDs to *all* connected clients
 		io.emit("get-online-users", Object.keys(onlineUsers));
@@ -100,9 +100,9 @@ io.on("connection", (socket) => {
 
 	// --- 2. Handle 'sendMessage' event ---
 	socket.on("sendMessage", async ({ receiverId, content }) => {
-		console.log(
-			`[Socket Event Received] 'sendMessage' from socket ${socket.id}`
-		);
+		// console.log(
+		// 	`[Socket Event Received] 'sendMessage' from socket ${socket.id}`
+		// );
 
 		// Check if sender (currentUserId) is identified for this connection
 		if (!currentUserId) {
@@ -125,9 +125,9 @@ io.on("connection", (socket) => {
 			return;
 		}
 
-		console.log(
-			`[sendMessage] From User: ${currentUserId} To User: ${receiverId} Content: "${content}"`
-		);
+		//console.log(
+		// 	`[sendMessage] From User: ${currentUserId} To User: ${receiverId} Content: "${content}"`
+		// );
 
 		try {
 			// Create message data to save
@@ -147,35 +147,35 @@ io.on("connection", (socket) => {
 				"name username userId _id"
 			);
 
-			console.log(
-				`[sendMessage] Message saved to DB (ID: ${savedMessage._id})`
-			);
+			// console.log(
+			// 	`[sendMessage] Message saved to DB (ID: ${savedMessage._id})`
+			// );
 
 			// --- CRITICAL: Emitting to Receiver ---
 			const receiverSocketId = onlineUsers[receiverId];
 			if (receiverSocketId) {
 				// If receiver is online, emit 'receiveMessage' directly to their socket ID
-				console.log(
-					`[sendMessage] Receiver ${receiverId} IS ONLINE (Socket: ${receiverSocketId}). Emitting 'receiveMessage'...`
-				);
+				// console.log(
+				// 	`[sendMessage] Receiver ${receiverId} IS ONLINE (Socket: ${receiverSocketId}). Emitting 'receiveMessage'...`
+				// );
 				io.to(receiverSocketId).emit("receiveMessage", savedMessage);
 				// You could also emit to the room as a fallback/alternative:
 				// io.to(receiverId).emit('receiveMessage', savedMessage);
-				console.log(
-					`[sendMessage] Finished emitting 'receiveMessage' to receiver ${receiverId}.`
-				);
+				// console.log(
+				// 	`[sendMessage] Finished emitting 'receiveMessage' to receiver ${receiverId}.`
+				// );
 			} else {
 				// Handle offline receiver (e.g., push notification - future)
-				console.log(
-					`[sendMessage] Receiver ${receiverId} IS OFFLINE. Message saved, not emitted live.`
-				);
+				// console.log(
+				// 	`[sendMessage] Receiver ${receiverId} IS OFFLINE. Message saved, not emitted live.`
+				// );
 				// TODO: Implement offline notification logic if needed
 			}
 
 			// Also emit 'messageSent' confirmation back ONLY to the sender's socket
-			console.log(
-				`[sendMessage] Emitting 'messageSent' confirmation back to sender ${currentUserId} (Socket: ${socket.id})`
-			);
+			// console.log(
+			// 	`[sendMessage] Emitting 'messageSent' confirmation back to sender ${currentUserId} (Socket: ${socket.id})`
+			// );
 			socket.emit("messageSent", savedMessage);
 		} catch (error) {
 			console.error(
@@ -192,21 +192,21 @@ io.on("connection", (socket) => {
 	// --- 3. Handle 'typing' event ---
 	socket.on("typing", ({ receiverId }) => {
 		if (!currentUserId) {
-			console.log("[Typing Event] Ignored: Sender not setup.");
+			// console.log("[Typing Event] Ignored: Sender not setup.");
 			return;
 		}
 		if (!receiverId) {
-			console.log(
-				`[Typing Event] Ignored: Missing receiverId from sender ${currentUserId}.`
-			);
+			// console.log(
+			// 	`[Typing Event] Ignored: Missing receiverId from sender ${currentUserId}.`
+			// );
 			return;
 		}
 
 		const receiverSocketId = onlineUsers[receiverId];
 		if (receiverSocketId) {
-			console.log(
-				`[Typing Event] ${currentUserId} -> ${receiverId}. Emitting 'typing' to socket ${receiverSocketId}`
-			);
+			// console.log(
+			// 	`[Typing Event] ${currentUserId} -> ${receiverId}. Emitting 'typing' to socket ${receiverSocketId}`
+			// );
 			// Emit only to the specific receiver's socket ID
 			io.to(receiverSocketId).emit("typing", { senderId: currentUserId });
 		} else {
@@ -219,21 +219,21 @@ io.on("connection", (socket) => {
 	// --- 4. Handle 'stop typing' event ---
 	socket.on("stop typing", ({ receiverId }) => {
 		if (!currentUserId) {
-			console.log("[Stop Typing Event] Ignored: Sender not setup.");
+			// console.log("[Stop Typing Event] Ignored: Sender not setup.");
 			return;
 		}
 		if (!receiverId) {
-			console.log(
-				`[Stop Typing Event] Ignored: Missing receiverId from sender ${currentUserId}.`
-			);
+			// console.log(
+			// 	`[Stop Typing Event] Ignored: Missing receiverId from sender ${currentUserId}.`
+			// );
 			return;
 		}
 
 		const receiverSocketId = onlineUsers[receiverId];
 		if (receiverSocketId) {
-			console.log(
-				`[Stop Typing Event] ${currentUserId} -> ${receiverId}. Emitting 'stop typing' to socket ${receiverSocketId}`
-			);
+			// console.log(
+			// 	`[Stop Typing Event] ${currentUserId} -> ${receiverId}. Emitting 'stop typing' to socket ${receiverSocketId}`
+			// );
 			// Emit only to the specific receiver's socket ID
 			io.to(receiverSocketId).emit("stop typing", {
 				senderId: currentUserId,
@@ -245,19 +245,19 @@ io.on("connection", (socket) => {
 	socket.on("markAsRead", async ({ messageId, senderId }) => {
 		// currentUserId is the reader, senderId is the original message sender
 		if (!currentUserId) {
-			console.log("[MarkAsRead Event] Ignored: Reader not setup.");
+			// console.log("[MarkAsRead Event] Ignored: Reader not setup.");
 			return;
 		}
 		if (!messageId || !senderId) {
-			console.log(
-				`[MarkAsRead Event] Ignored: Missing messageId or senderId from reader ${currentUserId}.`
-			);
+			// console.log(
+			// 	`[MarkAsRead Event] Ignored: Missing messageId or senderId from reader ${currentUserId}.`
+			// );
 			return;
 		}
 
-		console.log(
-			`[MarkAsRead Event] Reader: ${currentUserId}, MsgID: ${messageId}, Original Sender: ${senderId}`
-		);
+		// console.log(
+		// 	`[MarkAsRead Event] Reader: ${currentUserId}, MsgID: ${messageId}, Original Sender: ${senderId}`
+		// );
 		try {
 			// Find the message WHERE the reader is the receiver and it's unread
 			const updatedMessage = await Message.findOneAndUpdate(
@@ -267,15 +267,15 @@ io.on("connection", (socket) => {
 			);
 
 			if (updatedMessage) {
-				console.log(
-					`[MarkAsRead] Message ${messageId} marked as read in DB.`
-				);
+				// console.log(
+				// 	`[MarkAsRead] Message ${messageId} marked as read in DB.`
+				// );
 				// Notify the original sender that their message was read
 				const originalSenderSocketId = onlineUsers[senderId];
 				if (originalSenderSocketId) {
-					console.log(
-						`[MarkAsRead] Notifying original sender ${senderId} (Socket: ${originalSenderSocketId}) that message was read.`
-					);
+					// console.log(
+					// 	`[MarkAsRead] Notifying original sender ${senderId} (Socket: ${originalSenderSocketId}) that message was read.`
+					// );
 					// Emit 'messageRead' event to the original sender
 					io.to(originalSenderSocketId).emit("messageRead", {
 						messageId: updatedMessage._id,
@@ -302,7 +302,7 @@ io.on("connection", (socket) => {
 
 	// --- 6. Handle 'deleteThisMessage' event ---
     socket.on('deleteThisMessage', async ({ messageId }) => {
-        console.log(`[Socket Event Received] 'deleteThisMessage' for MsgID: ${messageId} from socket ${socket.id}`);
+        // console.log(`[Socket Event Received] 'deleteThisMessage' for MsgID: ${messageId} from socket ${socket.id}`);
 
         // Check if user is identified for this connection
         if (!currentUserId) {
@@ -339,21 +339,21 @@ io.on("connection", (socket) => {
             const deleteResult = await Message.deleteOne({ _id: messageId });
 
             if (deleteResult.deletedCount === 1) {
-                console.log(`[deleteThisMessage] Message ${messageId} deleted from DB by ${currentUserId}.`);
+                // console.log(`[deleteThisMessage] Message ${messageId} deleted from DB by ${currentUserId}.`);
 
                 // --- Notify both sender and receiver (if online) ---
                 const senderId = message.sender.toString();
                 const receiverId = message.receiver.toString();
 
                 // Notify the sender (deleter)
-                console.log(`   Emitting 'messageDeleted' back to sender ${senderId} (Socket: ${socket.id})`);
+                // console.log(`   Emitting 'messageDeleted' back to sender ${senderId} (Socket: ${socket.id})`);
                 socket.emit('messageDeleted', { messageId, deletedBy: currentUserId });
 
                 // Find and notify the receiver if they are online and different from sender
                 if (receiverId !== senderId) {
                     const receiverSocketId = onlineUsers[receiverId];
                     if (receiverSocketId) {
-                         console.log(`   Emitting 'messageDeleted' to receiver ${receiverId} (Socket: ${receiverSocketId})`);
+                        //  console.log(`   Emitting 'messageDeleted' to receiver ${receiverId} (Socket: ${receiverSocketId})`);
                          io.to(receiverSocketId).emit('messageDeleted', { messageId, deletedBy: currentUserId });
                     } else {
                          console.log(`   Receiver ${receiverId} is offline. Cannot notify about deletion.`);

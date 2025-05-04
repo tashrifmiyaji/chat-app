@@ -18,7 +18,7 @@ export const getMessagesApi = async (otherUserId) => {
 
     try {
         // Log the API call being made
-        console.log(`API Call: GET /messages/${otherUserId}`);
+        // console.log(`API Call: GET /messages/${otherUserId}`);
         // Make the GET request using the configured Axios client
         const { data } = await apiClient.get(`/messages/${otherUserId}`);
 
@@ -40,7 +40,7 @@ export const getMessagesApi = async (otherUserId) => {
 export const getConversationsApi = async () => {
     try {
         // Log the API call
-        console.log("API Call: GET /messages/conversations");
+        // console.log("API Call: GET /messages/conversations");
         // Make the GET request
         const { data } = await apiClient.get('/messages/conversations');
 
@@ -68,7 +68,7 @@ export const deleteConversationApi = async (otherUserId) => {
     }
     try {
         // Log the API call
-        console.log(`API Call: DELETE /messages/conversation/${otherUserId}`);
+        // console.log(`API Call: DELETE /messages/conversation/${otherUserId}`);
         // Make the DELETE request
         const { data } = await apiClient.delete(`/messages/conversation/${otherUserId}`);
         // data should be { message: '...', deletedCount: X }
@@ -96,7 +96,7 @@ export const deleteSingleMessageApi = async (messageId) => {
     }
     try {
         // Log the API call
-        console.log(`API Call: DELETE /messages/${messageId}`);
+        // console.log(`API Call: DELETE /messages/${messageId}`);
         // Make the DELETE request to the endpoint for deleting a single message
         const { data } = await apiClient.delete(`/messages/${messageId}`);
         // data should be { message: 'Message deleted successfully.' }

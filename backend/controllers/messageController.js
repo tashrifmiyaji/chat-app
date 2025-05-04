@@ -19,7 +19,7 @@ const getMessages = async (req, res, next) => {
         return res.status(400).json({ message: 'Invalid user ID format provided.' });
     }
 
-    console.log(`getMessages: Fetching messages between ${loggedInUserId} and ${otherUserId}`);
+    // console.log(`getMessages: Fetching messages between ${loggedInUserId} and ${otherUserId}`);
     try {
         const messages = await Message.find({
             $or: [
@@ -31,7 +31,7 @@ const getMessages = async (req, res, next) => {
         // .populate('receiver', 'name username userId _id') // Optionally populate receiver
         .sort({ createdAt: 1 }); // Sort messages by creation time (oldest first)
 
-        console.log(`getMessages: Found ${messages.length} messages for the conversation.`);
+        // console.log(`getMessages: Found ${messages.length} messages for the conversation.`);
         res.status(200).json(messages);
 
     } catch (error) {
@@ -57,7 +57,7 @@ const deleteConversation = async (req, res, next) => {
         return res.status(400).json({ message: 'Invalid user ID format.' });
     }
 
-    console.log(`deleteConversation: Attempting to delete messages between ${loggedInUserId} and ${otherUserId}`);
+    // console.log(`deleteConversation: Attempting to delete messages between ${loggedInUserId} and ${otherUserId}`);
     try {
         const result = await Message.deleteMany({
             $or: [
@@ -66,7 +66,7 @@ const deleteConversation = async (req, res, next) => {
             ],
         });
 
-        console.log(`deleteConversation: Deletion result - Deleted ${result.deletedCount} messages.`);
+        // console.log(`deleteConversation: Deletion result - Deleted ${result.deletedCount} messages.`);
         res.status(200).json({
             message: 'Conversation deleted successfully.',
             deletedCount: result.deletedCount,
@@ -82,7 +82,7 @@ const deleteConversation = async (req, res, next) => {
 // @route   DELETE /api/messages/:messageId
 // @access  Protected
 const deleteSingleMessage = async (req, res, next) => {
-    console.log("\n--- deleteSingleMessage Controller ---");
+    // console.log("\n--- deleteSingleMessage Controller ---");
     if (!req.user || !req.user._id) { return res.status(401).json({ message: 'Authentication error.' }); }
     const loggedInUserId = req.user._id;
     const messageId = req.params.messageId;
@@ -91,11 +91,11 @@ const deleteSingleMessage = async (req, res, next) => {
         console.error(`deleteSingleMessage Error: Invalid messageId format: ${messageId}`);
         return res.status(400).json({ message: 'Invalid message ID format.' });
     }
-    console.log(`deleteSingleMessage: User ${loggedInUserId} attempting to delete message ${messageId}`);
+    // console.log(`deleteSingleMessage: User ${loggedInUserId} attempting to delete message ${messageId}`);
     try {
         const message = await Message.findById(messageId);
         if (!message) {
-            console.log(`deleteSingleMessage: Message ${messageId} not found.`);
+            // console.log(`deleteSingleMessage: Message ${messageId} not found.`);
             return res.status(404).json({ message: 'Message not found.' });
         }
         // --- CRITICAL: Check if the logged-in user is the sender ---
@@ -106,7 +106,7 @@ const deleteSingleMessage = async (req, res, next) => {
         // Proceed with deletion
         const result = await Message.deleteOne({ _id: messageId });
         if (result.deletedCount === 1) {
-             console.log(`deleteSingleMessage: Message ${messageId} deleted successfully by user ${loggedInUserId}.`);
+            //  console.log(`deleteSingleMessage: Message ${messageId} deleted successfully by user ${loggedInUserId}.`);
              res.status(200).json({ message: 'Message deleted successfully.' });
         } else {
              console.warn(`deleteSingleMessage: Message ${messageId} found but delete operation removed 0 documents.`);
@@ -147,7 +147,7 @@ const deleteMultipleMessages = async (req, res, next) => {
         return res.status(400).json({ message: 'No valid message IDs provided.' });
     }
 
-    console.log(`deleteMultipleMessages: User ${loggedInUserId} attempting to delete ${validMessageIds.length} messages.`);
+    // console.log(`deleteMultipleMessages: User ${loggedInUserId} attempting to delete ${validMessageIds.length} messages.`);
     try {
         // Delete messages where _id is in the array AND the logged-in user is the SENDER
         // Users should only be able to delete their own messages in bulk as well.
@@ -156,10 +156,10 @@ const deleteMultipleMessages = async (req, res, next) => {
             sender: loggedInUserId // <-- Ensure user is the sender
         });
 
-        console.log(`deleteMultipleMessages: Deletion result - Deleted ${result.deletedCount} messages (where user was sender).`);
+        // console.log(`deleteMultipleMessages: Deletion result - Deleted ${result.deletedCount} messages (where user was sender).`);
 
         if (result.deletedCount === 0 && validMessageIds.length > 0) {
-             console.log(`deleteMultipleMessages: No messages deleted for IDs: ${validMessageIds.join(', ')} (either not found or user not sender).`);
+            //  console.log(`deleteMultipleMessages: No messages deleted for IDs: ${validMessageIds.join(', ')} (either not found or user not sender).`);
         }
 
         res.status(200).json({
@@ -190,7 +190,7 @@ const getConversations = async (req, res, next) => {
     }
 
     try {
-        console.log(`getConversations: Executing aggregation for user ID: ${loggedInUserId}`);
+        // console.log(`getConversations: Executing aggregation for user ID: ${loggedInUserId}`);
         const conversations = await Message.aggregate([
             // Match messages involving the logged-in user
             { $match: { $or: [{ sender: loggedInUserId }, { receiver: loggedInUserId }] } },
@@ -251,7 +251,7 @@ const getConversations = async (req, res, next) => {
             },
         ]).exec();
 
-        console.log(`getConversations: Aggregation successful. Found ${conversations.length} conversations.`);
+        // console.log(`getConversations: Aggregation successful. Found ${conversations.length} conversations.`);
         res.status(200).json(conversations);
 
     } catch (error) {

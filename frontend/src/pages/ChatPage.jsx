@@ -21,13 +21,13 @@ const ChatPage = () => {
 
     // Fetches conversations from the API
     const fetchConversations = useCallback(async () => {
-        console.log("ChatPage: Fetching conversations...");
+        // console.log("ChatPage: Fetching conversations...");
         setLoadingConversations(true);
         setConversationsError(null);
         try {
             const convos = await getConversationsApi();
             setConversations(convos);
-            console.log("ChatPage: Fetched conversations count:", convos.length);
+            // console.log("ChatPage: Fetched conversations count:", convos.length);
         } catch (error) {
             setConversationsError("Could not load recent chats.");
             console.error("ChatPage: Conversation fetch error:", error);
@@ -56,9 +56,9 @@ const ChatPage = () => {
     useEffect(() => {
         if (!socket || !loggedInUser?._id) return;
 
-        console.log("ChatPage: Setting up 'receiveMessage' listener.");
+        // console.log("ChatPage: Setting up 'receiveMessage' listener.");
         const handleReceiveMessage = (newMessage) => {
-            console.log("ChatPage <<< receiveMessage:", newMessage);
+            // console.log("ChatPage <<< receiveMessage:", newMessage);
             if (!newMessage?.sender?._id || !newMessage?.receiver) {
                  console.warn("ChatPage: Received incomplete message via socket:", newMessage);
                  return;
@@ -68,7 +68,7 @@ const ChatPage = () => {
 
             // Ignore own messages or messages not intended for the logged-in user
             if (senderId === loggedInUser._id || receiverId !== loggedInUser._id) {
-                console.log("ChatPage: Ignoring own message or message not for me.");
+                // console.log("ChatPage: Ignoring own message or message not for me.");
                 return;
             }
 
@@ -96,11 +96,11 @@ const ChatPage = () => {
                     };
                     updatedConvos.splice(existingConvoIndex, 1); // Remove old entry
                     updatedConvos.unshift(updatedConvo); // Add updated entry to the beginning
-                    console.log(`ChatPage: Updated existing conversation with ${partnerId}. Unread: ${updatedConvo.unreadCount}`);
+                    // console.log(`ChatPage: Updated existing conversation with ${partnerId}. Unread: ${updatedConvo.unreadCount}`);
                 } else {
                     // New conversation: Refetch the entire list for simplicity
                     // A more complex approach would fetch participant info and create the convo object locally
-                    console.log(`ChatPage: New conversation started with ${partnerId}. Refetching list...`);
+                    // console.log(`ChatPage: New conversation started with ${partnerId}. Refetching list...`);
                     fetchConversations(); // Easiest way to handle new convos for now
                 }
                 return updatedConvos; // Return the modified list
@@ -111,7 +111,7 @@ const ChatPage = () => {
 
         // Cleanup listener on component unmount or dependency change
         return () => {
-            console.log("ChatPage: Removing 'receiveMessage' listener.");
+            // console.log("ChatPage: Removing 'receiveMessage' listener.");
             socket.off('receiveMessage', handleReceiveMessage);
         };
     // Dependencies ensure effect runs when needed
@@ -120,7 +120,7 @@ const ChatPage = () => {
 
     // Handles selecting a conversation from the Sidebar
     const handleSelectConversation = useCallback((userOrChat) => {
-        console.log("ChatPage: Selecting conversation with:", userOrChat?.name);
+        // console.log("ChatPage: Selecting conversation with:", userOrChat?.name);
         setSelectedConversation(userOrChat);
         // Mark as read locally immediately for better UX
         if (userOrChat?._id) {
@@ -134,14 +134,14 @@ const ChatPage = () => {
 
     // Handles callback when a conversation is deleted in ChatArea
     const handleConversationDeleted = useCallback((deletedUserId) => {
-        console.log(`ChatPage: Conversation deleted with ${deletedUserId}. Refetching list.`);
+        // console.log(`ChatPage: Conversation deleted with ${deletedUserId}. Refetching list.`);
         setSelectedConversation(null); // Clear selection
         fetchConversations(); // Refresh the list
     }, [fetchConversations]);
 
     // Handles callback when messages are deleted in ChatArea (to update last message)
     const handleMessagesDeleted = useCallback(() => {
-        console.log("ChatPage: Messages deleted in ChatArea. Refetching conversations...");
+        // console.log("ChatPage: Messages deleted in ChatArea. Refetching conversations...");
         fetchConversations(); // Refresh the list to show correct last message
     }, [fetchConversations]);
 
