@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import io from 'socket.io-client';
 import { useAuth } from '../hooks/useAuth'; // To get user ID
 
-const serverUrl = import.meta.env.REACT_APP_serverUrl;
+const serverUrl = import.meta.env.VITE_SERVER_URL;
 
 const SocketContext = createContext(null);
 
