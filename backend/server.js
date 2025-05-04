@@ -26,13 +26,25 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
+// ---origin---
+const allowedOrigins = [
+    "http://localhost:5173", 
+    "https://your-frontend-app-name.onrender.com"
+];
+
 // --- Initialize Socket.IO Server ---
 const io = new Server(server, {
 	pingTimeout: 60000, // Close connection if no pong received after 60s
 	cors: {
-		origin: "*", // Allow all origins for development. Change to frontend URL in production!
-		// methods: ["GET", "POST"]
-	},
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                console.warn(`CORS Error: Origin ${origin} not allowed.`);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+    },
 });
 
 // --- Express Middleware ---
