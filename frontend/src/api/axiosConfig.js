@@ -1,8 +1,10 @@
 // src/api/axiosConfig.js
 import axios from 'axios';
 
+const serverUrl = import.meta.env.REACT_APP_serverUrl;
+
 const apiClient = axios.create({
-    baseURL: 'https://chat-app-server-dys7.onrender.com/api',
+    baseURL: `${serverUrl}/api`,
     headers: {
         'Content-Type': 'application/json',
     },
