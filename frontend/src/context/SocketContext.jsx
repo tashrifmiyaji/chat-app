@@ -25,7 +25,7 @@ export const SocketProvider = ({ children }) => {
         let newSocket = null;
         if (user?._id) { // Only connect if user is logged in and has an ID
             // Connect to the backend socket server
-            newSocket = io(`${serverUrl}/`, { // Your backend URL
+            newSocket = io(serverUrl, { // Your backend URL
                 // Optional: Add query parameters if needed by backend
                 // query: { userId: user._id } // We use 'setup' event instead
                  reconnectionAttempts: 5, // Try to reconnect 5 times
