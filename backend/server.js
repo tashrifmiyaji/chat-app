@@ -29,7 +29,7 @@ const server = http.createServer(app);
 // ---origin---
 const allowedOrigins = [
     "http://localhost:5173", 
-    "https://your-frontend-app-name.onrender.com"
+    "https://chat-app-1oga.onrender.com"
 ];
 
 // --- Initialize Socket.IO Server ---
