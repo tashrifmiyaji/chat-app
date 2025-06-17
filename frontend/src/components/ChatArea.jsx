@@ -423,7 +423,7 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
                             console.warn("Skipping rendering incomplete message object:", msg); return null;
                         }
                         const isSender = msg.sender._id === loggedInUser._id;
-                        const messageTime = new Date(msg.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                        const messageTime = new Date(msg.createdAt).toLocaleString([], { day: '2-digit', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true});
                         const isDeletingThisMessage = deletingMessageId === msg._id;
                         const isSelected = selectedMessageIds.includes(msg._id);
 
