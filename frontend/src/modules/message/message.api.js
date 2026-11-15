@@ -1,5 +1,15 @@
 // src/api/messageApi.js
-import apiClient from './axiosConfig'; // Ensure this path is correct and it exports configured Axios instance
+import apiClient from '../../api/axiosConfig';
+import {
+    cachedRequest,
+    getCacheScope,
+    invalidateCachedValue,
+    invalidateCachedPrefix
+} from '../../lib/requestCache';
+
+const cachePrefix = () => `messages:${getCacheScope()}:`;
+export const messagesCacheKey = (otherUserId) => `${cachePrefix()}history:${otherUserId}`;
+export const conversationsCacheKey = () => `${cachePrefix()}conversations`;
 
 /**
  * Fetches the conversation history between the logged-in user and another user.
@@ -16,6 +26,7 @@ export const getMessagesApi = async (otherUserId) => {
         // Or: throw new Error("Invalid participant ID provided.");
     }
 
+    return cachedRequest(messagesCacheKey(otherUserId), async () => {
     try {
         // Log the API call being made
         // console.log(`API Call: GET /messages/${otherUserId}`);
@@ -30,6 +41,7 @@ export const getMessagesApi = async (otherUserId) => {
         // Re-throw the error so the calling component (e.g., ChatArea) can handle it
         throw error.response?.data || error;
     }
+    });
 };
 
 /**
@@ -38,6 +50,7 @@ export const getMessagesApi = async (otherUserId) => {
  * @returns {Promise<Array>} - A promise resolving to an array of conversation objects.
  */
 export const getConversationsApi = async () => {
+    return cachedRequest(conversationsCacheKey(), async () => {
     try {
         // Log the API call
         // console.log("API Call: GET /messages/conversations");
@@ -52,6 +65,7 @@ export const getConversationsApi = async () => {
         // Re-throw the error
         throw error.response?.data || error;
     }
+    });
 };
 
 /**
@@ -71,6 +85,8 @@ export const deleteConversationApi = async (otherUserId) => {
         // console.log(`API Call: DELETE /messages/conversation/${otherUserId}`);
         // Make the DELETE request
         const { data } = await apiClient.delete(`/messages/conversation/${otherUserId}`);
+        invalidateCachedValue(messagesCacheKey(otherUserId));
+        invalidateCachedValue(conversationsCacheKey());
         // data should be { message: '...', deletedCount: X }
         return data;
     } catch (error) {
@@ -99,6 +115,7 @@ export const deleteSingleMessageApi = async (messageId) => {
         // console.log(`API Call: DELETE /messages/${messageId}`);
         // Make the DELETE request to the endpoint for deleting a single message
         const { data } = await apiClient.delete(`/messages/${messageId}`);
+        invalidateCachedPrefix(cachePrefix());
         // data should be { message: 'Message deleted successfully.' }
         return data;
     } catch (error) {
@@ -131,6 +148,7 @@ export const deleteMultipleMessagesApi = async (messageIds) => {
          const { data } = await apiClient.delete('/messages', {
              data: { messageIds: messageIds }
          });
+         invalidateCachedPrefix(cachePrefix());
          // data should be { message: '...', deletedCount: X }
          return data;
      } catch (error) {

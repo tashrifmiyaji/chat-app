@@ -1,5 +1,5 @@
 // frontend/src/api/authApi.js
-import apiClient from './axiosConfig'; // Use the configured axios client
+import apiClient from '../../api/axiosConfig';
 
 // Register User API Call
 export const registerUserApi = async (userData) => {

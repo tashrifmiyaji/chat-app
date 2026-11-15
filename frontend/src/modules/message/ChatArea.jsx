@@ -1,9 +1,15 @@
 // src/components/ChatArea.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../../hooks/useAuth';
+import { useSocket } from '../../context/SocketContext';
 // API এখন শুধু কনভারসেশন ও মাল্টিপল ডিলিটের জন্য লাগছে
-import { getMessagesApi, deleteConversationApi, deleteMultipleMessagesApi } from '../api/messageApi';
+import {
+    getMessagesApi,
+    deleteConversationApi,
+    deleteMultipleMessagesApi,
+    messagesCacheKey
+} from './message.api';
+import { updateCachedValue } from '../../lib/requestCache';
 import toast from 'react-hot-toast';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 
@@ -55,6 +61,13 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
                     ? { ...msg, read: true }
                     : msg
             ));
+            updateCachedValue(messagesCacheKey(selectedConversation._id), messages =>
+                messages.map(msg =>
+                    unreadMessages.some(unread => unread._id === msg._id)
+                        ? { ...msg, read: true }
+                        : msg
+                )
+            );
         }
     }, [socket, selectedConversation]);
 
@@ -111,6 +124,11 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
             const isFromOtherUserInCurrentChat = selectedConversation && receivedMessage.sender._id === selectedConversation._id && receivedMessage.receiver === loggedInUser._id;
 
             if (isFromOtherUserInCurrentChat) {
+                updateCachedValue(messagesCacheKey(selectedConversation._id), messages =>
+                    messages.some(msg => msg._id === receivedMessage._id)
+                        ? messages
+                        : [...messages, receivedMessage]
+                );
                 // console.log("   Action: ADDING message from other user to state.");
                 setMessages(prev => {
                     if (prev.some(msg => msg._id === receivedMessage._id)) {
@@ -153,6 +171,13 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
                          return msg;
                      });
                  });
+                 updateCachedValue(messagesCacheKey(selectedConversation._id), messages =>
+                    messages.map(msg =>
+                        msg._id === messageId && msg.sender?._id === loggedInUser._id
+                            ? { ...msg, read: true }
+                            : msg
+                    )
+                 );
             } else {
                 console.log("   Condition NOT MET: Event is for a different chat or no chat selected.");
             }
@@ -161,6 +186,13 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
         // --- messageSent listener (Confirmation for sender) ---
         const messageSentListener = (savedMessage) => {
              if (!savedMessage?._id) return;
+             updateCachedValue(messagesCacheKey(selectedConversation?._id), messages =>
+                messages.map(msg =>
+                    msg.isOptimistic && msg.content === savedMessage.content && msg.sender?._id === savedMessage.sender?._id
+                        ? savedMessage
+                        : msg
+                )
+             );
             //  console.log('>>> Socket Event Received: messageSent (Confirming msg)', savedMessage);
              setMessages(prev => prev.map(msg => (msg.isOptimistic && msg.content === savedMessage.content && msg.sender._id === savedMessage.sender._id) ? savedMessage : msg));
         };
@@ -178,8 +210,9 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
                      return prevMessages;
                  }
              });
-             // Inform ChatPage to potentially refresh sidebar
-             if (onMessagesDeleted) onMessagesDeleted();
+             updateCachedValue(messagesCacheKey(selectedConversation?._id), messages =>
+                messages.filter(msg => msg._id !== messageId)
+             );
         };
 
         // --- deleteMessageError listener ---
@@ -234,6 +267,7 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
             read: false,
             isOptimistic: true
         };
+        updateCachedValue(messagesCacheKey(selectedConversation._id), messages => [...messages, optimisticMessage]);
         setMessages(prevMessages => [...prevMessages, optimisticMessage]);
         scrollToBottom('auto');
         socket.emit('sendMessage', { receiverId: selectedConversation._id, content });
@@ -278,6 +312,9 @@ const ChatArea = ({ selectedConversation, isSelectedUserOnline, onConversationDe
             try {
                 const result = await deleteMultipleMessagesApi(selectedMessageIds); // Still uses API
                 console.log(`Deleted ${result.deletedCount} messages.`);
+                updateCachedValue(messagesCacheKey(selectedConversation._id), messages =>
+                    messages.filter(msg => !selectedMessageIds.includes(msg._id))
+                );
                 setMessages(prevMessages =>
                     prevMessages.filter(msg => !selectedMessageIds.includes(msg._id))
                 );

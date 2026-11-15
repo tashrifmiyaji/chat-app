@@ -9,6 +9,9 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const { login, loading, error, setError, user } = useAuth(); // Get needed values/functions
     const navigate = useNavigate();
+    const defaultUsername = import.meta.env.VITE_DEFAULT_USERNAME;
+    const defaultPassword = import.meta.env.VITE_DEFAULT_PASSWORD;
+    const hasDefaultLogin = Boolean(defaultUsername && defaultPassword);
 
     // Redirect if user is already logged in
     useEffect(() => {
@@ -98,6 +101,16 @@ const LoginPage = () => {
                             {loading ? 'Logging In...' : 'Login'}
                         </button>
                     </div>
+                    {hasDefaultLogin && (
+                        <button
+                            type="button"
+                            onClick={() => login(defaultUsername, defaultPassword)}
+                            disabled={loading}
+                            className="w-full font-semibold py-2 px-4 rounded border border-accent-cyan/60 text-accent-cyan hover:bg-accent-cyan/10 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            {loading ? 'Logging In...' : 'Default User'}
+                        </button>
+                    )}
                 </form>
 
                 <p className="mt-6 text-center text-sm text-slate">

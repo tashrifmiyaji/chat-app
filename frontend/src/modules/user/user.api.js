@@ -1,16 +1,21 @@
 // src/api/userApi.js
-import apiClient from './axiosConfig';
+import apiClient from '../../api/axiosConfig';
+import { cachedRequest, getCacheScope } from '../../lib/requestCache';
 
 // Search users
 export const searchUsersApi = async (searchTerm) => {
     if (!searchTerm || searchTerm.trim() === '') return [];
-    try {
-        const { data } = await apiClient.get(`/users?search=${searchTerm}`);
-        return data;
-    } catch (error) {
-        console.error("Error searching users:", error.response?.data || error);
-        throw error.response?.data || error;
-    }
+    const term = searchTerm.trim();
+    const cacheKey = `users:${getCacheScope()}:search:${term.toLowerCase()}`;
+    return cachedRequest(cacheKey, async () => {
+        try {
+            const { data } = await apiClient.get('/users', { params: { search: term } });
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error("Error searching users:", error.response?.data || error);
+            throw error.response?.data || error;
+        }
+    }, 60_000);
 };
 
 // --- Add function to delete own account ---

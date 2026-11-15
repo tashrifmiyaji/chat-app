@@ -1,7 +1,8 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUserApi, loginUserApi } from '../api/authApi';
+import { registerUserApi, loginUserApi } from '../modules/auth/auth.api';
+import { clearRequestCache } from '../lib/requestCache';
 import toast from 'react-hot-toast';
 
 // Create Context
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
         const toastId = toast.loading('Logging in...');
         try {
             const data = await loginUserApi({ identifier, password });
+            clearRequestCache();
             setUser(data); // Update state with user info + token
             localStorage.setItem('userInfo', JSON.stringify(data)); // Store in local storage
             toast.success('Login successful!', { id: toastId }); 
@@ -72,6 +74,7 @@ export const AuthProvider = ({ children }) => {
 
     // Logout function
     const logout = useCallback(() => {
+        clearRequestCache();
         setUser(null);
         localStorage.removeItem('userInfo');
         toast.success('Logged out successfully.');

@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { searchUsersApi } from '../api/userApi';
+import { searchUsersApi } from './user.api';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton'; // Skeleton ইম্পোর্ট
 
 // Debounce function helper

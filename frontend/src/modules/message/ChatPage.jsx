@@ -1,10 +1,17 @@
 // src/pages/ChatPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSocket } from '../context/SocketContext';
-import { useAuth } from '../hooks/useAuth';
-import { getConversationsApi } from '../api/messageApi';
-import Sidebar from '../components/Sidebar';
-import ChatArea from '../components/ChatArea';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSocket } from '../../context/SocketContext';
+import { useAuth } from '../../hooks/useAuth';
+import { getConversationsApi, conversationsCacheKey } from './message.api';
+import {
+    invalidateCachedValue,
+    invalidateCachedPrefix,
+    getCacheScope,
+    setCachedValue,
+    updateCachedValue
+} from '../../lib/requestCache';
+import Sidebar from '../user/Sidebar';
+import ChatArea from './ChatArea';
 
 const ChatPage = () => {
     const { socket, onlineUsers } = useSocket();
@@ -15,18 +22,21 @@ const ChatPage = () => {
     const [conversations, setConversations] = useState([]);
     const [loadingConversations, setLoadingConversations] = useState(false);
     const [conversationsError, setConversationsError] = useState(null);
+    const conversationsInitialized = useRef(false);
 
     // State for mobile sidebar visibility
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Fetches conversations from the API
-    const fetchConversations = useCallback(async () => {
+    const fetchConversations = useCallback(async (refresh = false) => {
         // console.log("ChatPage: Fetching conversations...");
         setLoadingConversations(true);
         setConversationsError(null);
         try {
+            if (refresh) invalidateCachedValue(conversationsCacheKey());
             const convos = await getConversationsApi();
             setConversations(convos);
+            conversationsInitialized.current = true;
             // console.log("ChatPage: Fetched conversations count:", convos.length);
         } catch (error) {
             setConversationsError("Could not load recent chats.");
@@ -40,6 +50,12 @@ const ChatPage = () => {
     useEffect(() => {
         fetchConversations();
     }, [fetchConversations]);
+
+    useEffect(() => {
+        if (conversationsInitialized.current) {
+            setCachedValue(conversationsCacheKey(), conversations);
+        }
+    }, [conversations]);
 
     // Marks a conversation as read locally (resets unread count in UI)
     const markConversationAsReadLocally = useCallback((participantId) => {
@@ -73,6 +89,11 @@ const ChatPage = () => {
             }
 
             const partnerId = senderId; // The partner is the sender
+            updateCachedValue(`messages:${getCacheScope()}:history:${partnerId}`, messages =>
+                messages.some(message => message._id === newMessage._id)
+                    ? messages
+                    : [...messages, newMessage]
+            );
 
             setConversations(prevConvos => {
                 const existingConvoIndex = prevConvos.findIndex(c => c.participant?._id === partnerId);
@@ -98,10 +119,18 @@ const ChatPage = () => {
                     updatedConvos.unshift(updatedConvo); // Add updated entry to the beginning
                     // console.log(`ChatPage: Updated existing conversation with ${partnerId}. Unread: ${updatedConvo.unreadCount}`);
                 } else {
-                    // New conversation: Refetch the entire list for simplicity
-                    // A more complex approach would fetch participant info and create the convo object locally
-                    // console.log(`ChatPage: New conversation started with ${partnerId}. Refetching list...`);
-                    fetchConversations(); // Easiest way to handle new convos for now
+                    updatedConvos.unshift({
+                        participant: newMessage.sender,
+                        lastMessage: {
+                            _id: newMessage._id,
+                            content: newMessage.content,
+                            sender: senderId,
+                            receiver: receiverId,
+                            read: newMessage.read,
+                            createdAt: newMessage.createdAt,
+                        },
+                        unreadCount: selectedConversation?._id === partnerId ? 0 : 1,
+                    });
                 }
                 return updatedConvos; // Return the modified list
             });
@@ -136,14 +165,24 @@ const ChatPage = () => {
     const handleConversationDeleted = useCallback((deletedUserId) => {
         // console.log(`ChatPage: Conversation deleted with ${deletedUserId}. Refetching list.`);
         setSelectedConversation(null); // Clear selection
-        fetchConversations(); // Refresh the list
+        fetchConversations(true); // Refresh the list
     }, [fetchConversations]);
 
     // Handles callback when messages are deleted in ChatArea (to update last message)
     const handleMessagesDeleted = useCallback(() => {
         // console.log("ChatPage: Messages deleted in ChatArea. Refetching conversations...");
-        fetchConversations(); // Refresh the list to show correct last message
+        fetchConversations(true); // Refresh the list to show correct last message
     }, [fetchConversations]);
+
+    useEffect(() => {
+        if (!socket) return;
+        const handleConversationRefresh = () => {
+            invalidateCachedPrefix(`messages:${getCacheScope()}:history:`);
+            fetchConversations(true);
+        };
+        socket.on('messageDeleted', handleConversationRefresh);
+        return () => socket.off('messageDeleted', handleConversationRefresh);
+    }, [socket, fetchConversations]);
 
 
     // Determines if the currently selected user is online
@@ -196,7 +235,7 @@ const ChatPage = () => {
                     conversations={conversations}
                     loadingConversations={loadingConversations}
                     conversationsError={conversationsError}
-                    fetchConversations={fetchConversations} // Pass fetch function for retry button
+                    fetchConversations={() => fetchConversations(true)} // Pass fetch function for retry button
                     onSelectConversation={handleSelectConversation} // Pass updated selection handler
                     selectedConversation={selectedConversation}
                     onlineUsers={onlineUsers} // Pass online users list

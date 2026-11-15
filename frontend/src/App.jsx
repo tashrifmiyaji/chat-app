@@ -3,7 +3,7 @@ import React from 'react';
 import { Routes, Route, Outlet, Navigate, Link } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import ChatPage from './pages/ChatPage';
+import ChatPage from './modules/message/ChatPage';
 import AboutPage from './pages/AboutPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage'; // <-- Import the new page
 import { useAuth } from './hooks/useAuth';

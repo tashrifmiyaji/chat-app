@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { deleteUserAccountApi } from '../api/userApi';
+import { deleteUserAccountApi } from '../modules/user/user.api';
 import toast from 'react-hot-toast'; 
 
 const AboutPage = () => {
@@ -37,7 +37,21 @@ const AboutPage = () => {
         <div className="p-6 max-w-md mx-auto mt-10 mb-10 bg-gradient-to-br from-navy via-light-navy to-primary-purple rounded-lg shadow-xl border border-slate/30 flex flex-col">
 
             <div className="flex-grow">
-                <h1 className="text-3xl text-accent-cyan mb-6 text-center font-bold">About Me</h1>
+                <div className="flex items-center justify-between mb-6">
+                    <span className="w-8" aria-hidden="true" />
+                    <h1 className="text-3xl text-accent-cyan text-center font-bold">About Me</h1>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/')}
+                        className="w-8 h-8 flex items-center justify-center rounded-full text-slate hover:text-lightest-slate hover:bg-white/10 transition"
+                        aria-label="Close About Me"
+                        title="Close"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
                 {user ? (
                     <div className="space-y-4 text-lightest-slate mb-8">

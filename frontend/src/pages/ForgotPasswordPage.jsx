@@ -1,7 +1,7 @@
 // frontend/src/pages/ForgotPasswordPage.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { verifyUserForResetApi, resetPasswordApi } from '../api/authApi';
+import { verifyUserForResetApi, resetPasswordApi } from '../modules/auth/auth.api';
 import toast from 'react-hot-toast';
 
 const ForgotPasswordPage = () => {
