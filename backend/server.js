@@ -8,9 +8,9 @@ import { Server } from "socket.io";
 import connectDB from "./config/db.js";
 
 // --- Route Imports ---
-import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import messageRoutes from "./routes/messageRoutes.js";
+import authRoutes from "./modules/auth/auth.routes.js";
+import userRoutes from "./modules/user/user.routes.js";
+import messageRoutes from "./modules/message/message.routes.js";
 
 // --- Model Imports ---
 import Message from "./models/Message.js";

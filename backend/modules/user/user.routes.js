@@ -1,7 +1,7 @@
 // routes/userRoutes.js
 import express from 'express';
-import { searchUsers, deleteUserAccount } from '../controllers/userController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { searchUsers, deleteUserAccount } from './user.controller.js';
+import { protect } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
 

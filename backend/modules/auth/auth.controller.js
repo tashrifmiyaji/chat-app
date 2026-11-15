@@ -1,8 +1,14 @@
 // backend/controllers/authController.js
-import User from '../models/User.js';
-import generateUniqueUserId from '../utils/generateUniqueId.js';
-import generateToken from '../utils/generateToken.js';
+import generateToken from '../../utils/generateToken.js';
 import mongoose from 'mongoose'; // Ensure mongoose is imported
+import {
+    findUserById,
+    findUserByUsername,
+    findUserForLogin,
+    findUserForPasswordReset,
+    createRegisteredUser,
+    saveUser
+} from './auth.service.js';
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -21,21 +27,14 @@ const registerUser = async (req, res, next) => {
 
     try {
         // --- Check if username exists ---
-        const usernameExists = await User.findOne({ username: username.toLowerCase() });
+        const usernameExists = await findUserByUsername(username);
         if (usernameExists) {
             return res.status(400).json({ message: 'Username already taken' });
         }
 
         // --- Generate unique 7-digit ID ---
-        const userId = await generateUniqueUserId();
-
         // --- Create user (password will be hashed by pre-save hook in User model) ---
-        const user = await User.create({
-            name,
-            username, // Schema will lowercase it
-            userId,
-            password,
-        });
+        const user = await createRegisteredUser({ name, username, password });
 
         // --- Respond with user info and token ---
         if (user && user._id) { // Check if user and user._id exist
@@ -81,11 +80,7 @@ const loginUser = async (req, res, next) => {
     try {
         console.log(`Login attempt with identifier: "${identifier}"`);
         // --- Find user by userId OR username ---
-        let user = await User.findOne({ userId: identifier }).select('+password'); // Include password for comparison
-
-        if (!user) {
-            user = await User.findOne({ username: identifier.toLowerCase() }).select('+password'); // Include password
-        }
+        const user = await findUserForLogin(identifier);
 
         console.log("User found in DB:", user ? `Yes (ID: ${user._id})` : "No");
 
@@ -128,10 +123,7 @@ const verifyUserForReset = async (req, res) => {
 
     try {
         // Find user by username (lowercase) and userId
-        const user = await User.findOne({
-            username: username.trim().toLowerCase(),
-            userId: userId.trim()
-        });
+        const user = await findUserForPasswordReset(username, userId);
 
         if (user) {
             // User found, send back MongoDB _id for the next step
@@ -171,7 +163,7 @@ const resetPassword = async (req, res) => {
 
     try {
         // Find the user by their MongoDB _id
-        const user = await User.findById(mongoUserId);
+        const user = await findUserById(mongoUserId);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found for password reset.' });
@@ -179,7 +171,7 @@ const resetPassword = async (req, res) => {
 
         // --- Set the new password and use save() to trigger pre-save hook for hashing ---
         user.password = newPassword; // Assign the new password directly
-        await user.save(); // The pre-save hook in the User model will hash it before saving
+        await saveUser(user); // The pre-save hook in the User model will hash it before saving
 
         res.status(200).json({ message: 'Password reset successfully. You can now log in with your new password.' });
 

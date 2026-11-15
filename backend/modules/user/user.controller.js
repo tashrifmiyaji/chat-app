@@ -1,7 +1,6 @@
 // controllers/userController.js
-import User from '../models/User.js';
-import Message from '../models/Message.js'; // Needed for deleteUserAccount logic if messages are deleted too
 import mongoose from 'mongoose';
+import { deleteUserById, findUserById, searchUserRecords } from './user.service.js';
 
 // @desc    Search users by name or userId, excluding self
 // @route   GET /api/users?search=query
@@ -45,9 +44,7 @@ const searchUsers = async (req, res, next) => {
         // console.log('Executing MongoDB find with query:', JSON.stringify(queryConditions));
 
         // 5. Execute the Query
-        const users = await User.find(queryConditions)
-            .select('name userId _id') // Select specific fields
-            .limit(15); // Limit results to avoid overload (adjust as needed)
+        const users = await searchUserRecords(queryConditions);
 
         // console.log(`Query executed. Found ${users.length} users.`);
 
@@ -80,7 +77,7 @@ const deleteUserAccount = async (req, res, next) => {
 
     try {
         // Find the user to ensure they exist before attempting delete operations
-        const user = await User.findById(loggedInUserId);
+        const user = await findUserById(loggedInUserId);
 
         if (!user) {
             // console.log(`User with ID ${loggedInUserId} not found for deletion.`);
@@ -94,7 +91,7 @@ const deleteUserAccount = async (req, res, next) => {
         // Alternative: Delete messages too (affects other users' chat history).
 
         // Delete the user document
-        const deleteResult = await User.deleteOne({ _id: loggedInUserId });
+        const deleteResult = await deleteUserById(loggedInUserId);
         // console.log('User deletion result:', deleteResult);
 
         if (deleteResult.deletedCount === 0) {

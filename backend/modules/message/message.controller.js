@@ -1,7 +1,13 @@
 // backend/controllers/messageController.js
-import Message from '../models/Message.js';
-import User from '../models/User.js'; // Ensure User model is imported if needed for validation/population
 import mongoose from 'mongoose'; // Import mongoose to use mongoose.Types.ObjectId
+import {
+    deleteMessageById,
+    deleteMessagesBetweenUsers,
+    deleteMessagesByIdsSentByUser,
+    findMessageById,
+    findMessagesBetweenUsers,
+    findRecentConversations
+} from './message.service.js';
 
 // @desc    Get all messages between logged-in user and another user
 // @route   GET /api/messages/:otherUserId
@@ -21,15 +27,7 @@ const getMessages = async (req, res, next) => {
 
     // console.log(`getMessages: Fetching messages between ${loggedInUserId} and ${otherUserId}`);
     try {
-        const messages = await Message.find({
-            $or: [
-                { sender: loggedInUserId, receiver: otherUserId },
-                { sender: otherUserId, receiver: loggedInUserId },
-            ],
-        })
-        .populate('sender', 'name username userId _id') // Populate sender details
-        // .populate('receiver', 'name username userId _id') // Optionally populate receiver
-        .sort({ createdAt: 1 }); // Sort messages by creation time (oldest first)
+        const messages = await findMessagesBetweenUsers(loggedInUserId, otherUserId);
 
         // console.log(`getMessages: Found ${messages.length} messages for the conversation.`);
         res.status(200).json(messages);
@@ -59,12 +57,7 @@ const deleteConversation = async (req, res, next) => {
 
     // console.log(`deleteConversation: Attempting to delete messages between ${loggedInUserId} and ${otherUserId}`);
     try {
-        const result = await Message.deleteMany({
-            $or: [
-                { sender: loggedInUserId, receiver: otherUserId },
-                { sender: otherUserId, receiver: loggedInUserId },
-            ],
-        });
+        const result = await deleteMessagesBetweenUsers(loggedInUserId, otherUserId);
 
         // console.log(`deleteConversation: Deletion result - Deleted ${result.deletedCount} messages.`);
         res.status(200).json({
@@ -93,7 +86,7 @@ const deleteSingleMessage = async (req, res, next) => {
     }
     // console.log(`deleteSingleMessage: User ${loggedInUserId} attempting to delete message ${messageId}`);
     try {
-        const message = await Message.findById(messageId);
+        const message = await findMessageById(messageId);
         if (!message) {
             // console.log(`deleteSingleMessage: Message ${messageId} not found.`);
             return res.status(404).json({ message: 'Message not found.' });
@@ -104,7 +97,7 @@ const deleteSingleMessage = async (req, res, next) => {
              return res.status(403).json({ message: 'You can only delete your own messages.' }); // 403 Forbidden
         }
         // Proceed with deletion
-        const result = await Message.deleteOne({ _id: messageId });
+        const result = await deleteMessageById(messageId);
         if (result.deletedCount === 1) {
             //  console.log(`deleteSingleMessage: Message ${messageId} deleted successfully by user ${loggedInUserId}.`);
              res.status(200).json({ message: 'Message deleted successfully.' });
@@ -151,10 +144,7 @@ const deleteMultipleMessages = async (req, res, next) => {
     try {
         // Delete messages where _id is in the array AND the logged-in user is the SENDER
         // Users should only be able to delete their own messages in bulk as well.
-        const result = await Message.deleteMany({
-            _id: { $in: validMessageIds },
-            sender: loggedInUserId // <-- Ensure user is the sender
-        });
+        const result = await deleteMessagesByIdsSentByUser(validMessageIds, loggedInUserId);
 
         // console.log(`deleteMultipleMessages: Deletion result - Deleted ${result.deletedCount} messages (where user was sender).`);
 
@@ -191,65 +181,7 @@ const getConversations = async (req, res, next) => {
 
     try {
         // console.log(`getConversations: Executing aggregation for user ID: ${loggedInUserId}`);
-        const conversations = await Message.aggregate([
-            // Match messages involving the logged-in user
-            { $match: { $or: [{ sender: loggedInUserId }, { receiver: loggedInUserId }] } },
-            // Sort messages by creation time descending
-            { $sort: { createdAt: -1 } },
-            // Group by the conversation partner's ID
-            {
-                $group: {
-                    _id: { // Group key = Partner's ID
-                        $cond: { if: { $eq: ['$sender', loggedInUserId] }, then: '$receiver', else: '$sender' }
-                    },
-                    // Get the most recent message document
-                    lastMessage: { $first: '$$ROOT' },
-                    // Calculate unread count for the logged-in user
-                    unreadCount: {
-                        $sum: {
-                            $cond: [
-                                { $and: [{ $eq: ['$receiver', loggedInUserId] }, { $eq: ['$read', false] }] },
-                                1, // Count if receiver is me and message is unread
-                                0  // Otherwise, don't count
-                            ]
-                        }
-                    }
-                },
-            },
-            // Sort conversations by the last message time (most recent first)
-            { $sort: { 'lastMessage.createdAt': -1 } },
-            // Lookup participant details
-            {
-                $lookup: {
-                    from: 'users', // collection name
-                    localField: '_id', // partner's ID from $group stage
-                    foreignField: '_id', // field in the users collection
-                    as: 'participantInfo',
-                    pipeline: [ // Project only needed fields from participant
-                        { $project: { _id: 1, name: 1, username: 1, userId: 1 } }
-                    ]
-                },
-            },
-            // Unwind the participantInfo array (should be only one match)
-            // preserveNullAndEmptyArrays: false ensures conversations with deleted users are filtered out
-            { $unwind: { path: "$participantInfo", preserveNullAndEmptyArrays: false } },
-            // Project the final output format
-            {
-                $project: {
-                    _id: 0, // Exclude the group key (_id which is participant ID)
-                    participant: '$participantInfo', // The other user's details
-                    lastMessage: { // Details of the last message in the conversation
-                         _id: '$lastMessage._id',
-                         content: '$lastMessage.content',
-                         sender: '$lastMessage.sender',
-                         receiver: '$lastMessage.receiver',
-                         read: '$lastMessage.read',
-                         createdAt: '$lastMessage.createdAt',
-                    },
-                    unreadCount: '$unreadCount' // Include the calculated unread count
-                },
-            },
-        ]).exec();
+        const conversations = await findRecentConversations(loggedInUserId);
 
         // console.log(`getConversations: Aggregation successful. Found ${conversations.length} conversations.`);
         res.status(200).json(conversations);

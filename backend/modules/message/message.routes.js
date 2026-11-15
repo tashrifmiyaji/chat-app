@@ -6,8 +6,8 @@ import {
     deleteMultipleMessages,
     getConversations,
     deleteSingleMessage
-} from '../controllers/messageController.js';
-import { protect } from '../middleware/authMiddleware.js';
+} from './message.controller.js';
+import { protect } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
 
